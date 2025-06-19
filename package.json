@@ -1,0 +1,28 @@
+{
+  "name": "collaborative-editor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sanal-T/Collaborative-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sanal-T/Collaborative-editor/issues"
+  },
+  "homepage": "https://github.com/Sanal-T/Collaborative-editor#readme",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.16.0",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0"
+  }
+}
