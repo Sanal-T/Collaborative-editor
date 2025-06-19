@@ -48,7 +48,7 @@ io.on('connection', (socket) => {
       if (!document) {
         document = await Document.create({
           _id: documentId,
-          data: { ops: [] }
+          data: { content: '' }
         });
       }
 
@@ -84,8 +84,8 @@ io.on('connection', (socket) => {
   });
 
   // Handle document changes
-  socket.on('send-changes', (documentId, delta) => {
-    socket.to(documentId).emit('receive-changes', delta, socket.id);
+  socket.on('send-changes', (documentId, content) => {
+    socket.to(documentId).emit('receive-changes', content, socket.id);
   });
 
   // Save document
@@ -95,6 +95,7 @@ io.on('connection', (socket) => {
         data: data,
         lastModified: new Date()
       });
+      console.log('Document saved:', documentId);
     } catch (error) {
       console.error('Error saving document:', error);
     }
@@ -145,7 +146,7 @@ app.post('/api/documents', async (req, res) => {
     const document = await Document.create({
       _id: require('uuid').v4(),
       title: title || 'Untitled Document',
-      data: { ops: [] }
+      data: { content: '' }
     });
     res.json(document);
   } catch (error) {

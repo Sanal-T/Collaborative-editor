@@ -1,26 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import { useSocket } from '../hooks/useSocket';
 
 const DocumentEditor = ({ documentId, userName }) => {
-  const [quill, setQuill] = useState(null);
+  const [content, setContent] = useState('');
   const [users, setUsers] = useState([]);
   const socket = useSocket();
+  const textareaRef = useRef(null);
   const isUpdating = useRef(false);
-
-  // Quill modules configuration
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['blockquote', 'code-block'],
-      ['link', 'image'],
-      ['clean']
-    ],
-  };
 
   // Initialize document
   useEffect(() => {
@@ -29,14 +15,14 @@ const DocumentEditor = ({ documentId, userName }) => {
     socket.emit('join-document', documentId, { name: userName });
 
     socket.on('load-document', (documentData) => {
-      if (quill) {
-        quill.setContents(documentData);
+      if (documentData && documentData.content) {
+        setContent(documentData.content);
       }
     });
 
-    socket.on('receive-changes', (delta, userId) => {
-      if (quill && !isUpdating.current) {
-        quill.updateContents(delta);
+    socket.on('receive-changes', (newContent, userId) => {
+      if (!isUpdating.current) {
+        setContent(newContent);
       }
     });
 
@@ -59,14 +45,17 @@ const DocumentEditor = ({ documentId, userName }) => {
       socket.off('user-left');
       socket.off('users-list');
     };
-  }, [socket, documentId, userName, quill]);
+  }, [socket, documentId, userName]);
 
   // Handle text changes
-  const handleTextChange = useCallback((content, delta, source, editor) => {
-    if (source !== 'user' || !socket) return;
+  const handleTextChange = useCallback((e) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+
+    if (!socket) return;
 
     isUpdating.current = true;
-    socket.emit('send-changes', documentId, delta);
+    socket.emit('send-changes', documentId, newContent);
     
     setTimeout(() => {
       isUpdating.current = false;
@@ -75,17 +64,15 @@ const DocumentEditor = ({ documentId, userName }) => {
     // Auto-save every 2 seconds
     clearTimeout(window.saveTimeout);
     window.saveTimeout = setTimeout(() => {
-      socket.emit('save-document', documentId, editor.getContents());
+      socket.emit('save-document', documentId, { content: newContent });
     }, 2000);
   }, [socket, documentId]);
 
-  // Quill ref callback
-  const quillRef = useCallback((node) => {
-    if (node !== null) {
-      const quillInstance = node.getEditor();
-      setQuill(quillInstance);
-    }
-  }, []);
+  // Formatting functions
+  const formatText = (command, value = null) => {
+    document.execCommand(command, false, value);
+    textareaRef.current.focus();
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -111,15 +98,63 @@ const DocumentEditor = ({ documentId, userName }) => {
         </div>
       </div>
 
+      {/* Toolbar */}
+      <div className="bg-white border-b p-2 flex flex-wrap gap-2">
+        <button
+          onClick={() => formatText('bold')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium"
+        >
+          B
+        </button>
+        <button
+          onClick={() => formatText('italic')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm italic"
+        >
+          I
+        </button>
+        <button
+          onClick={() => formatText('underline')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm underline"
+        >
+          U
+        </button>
+        <div className="w-px bg-gray-300 mx-1"></div>
+        <button
+          onClick={() => formatText('fontSize', '3')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+        >
+          H1
+        </button>
+        <button
+          onClick={() => formatText('fontSize', '2')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+        >
+          H2
+        </button>
+        <div className="w-px bg-gray-300 mx-1"></div>
+        <button
+          onClick={() => formatText('insertUnorderedList')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+        >
+          • List
+        </button>
+        <button
+          onClick={() => formatText('insertOrderedList')}
+          className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+        >
+          1. List
+        </button>
+      </div>
+
       {/* Editor */}
       <div className="flex-1 p-4">
         <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-          <ReactQuill
-            ref={quillRef}
-            theme="snow"
+          <textarea
+            ref={textareaRef}
+            value={content}
             onChange={handleTextChange}
-            modules={modules}
-            style={{ height: 'calc(100vh - 200px)' }}
+            className="w-full h-full p-6 text-base leading-relaxed resize-none border-none outline-none"
+            style={{ minHeight: 'calc(100vh - 250px)' }}
             placeholder="Start typing your document..."
           />
         </div>
