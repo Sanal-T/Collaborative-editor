@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import DocumentEditor from './components/DocumentEditor';
-import DocumentList from './components/DocumentList';
+import DocumentEditor from './components/DocumentEditor.js';
+import DocumentList from './components/DocumentList.js';
 import './App.css';
 
 function App() {
